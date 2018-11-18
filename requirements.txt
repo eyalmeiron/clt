@@ -1,2 +1,2 @@
-simplejson
-colorama
+simplejson==3.16.0
+colorama==0.4.0
