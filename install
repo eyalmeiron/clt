@@ -21,11 +21,14 @@ args = register_arguments()
 local_pip_packages = '--no-index --find-links=file:{0}'.format(
     args.offline_install_path) if args.offline_install_path is not None else ''
 
-# create venv, activate it and install requirements to it (from a local dir if it exists)
-command = 'virtualenv venv && source venv/bin/activate && pip install {0} -r requirements.txt'.format(
-    local_pip_packages)
+# create venv and activate it
+run('virtualenv venv && source venv/bin/activate')
 
-run(command)
+# update pip
+run('curl https://bootstrap.pypa.io/get-pip.py | python')
+
+# install requirements
+run('pip install {0} -r requirements.txt'.format(local_pip_packages))
 
 # symlink to run
 ln_cmd = 'ln -sF {0}/run /usr/local/bin/clt'.format(os.getcwd())
