@@ -37,7 +37,7 @@ ignored_more_attributes = [
 	'remainingHolders',
 	'holderId',
 	'maxHolders',
-	{'timeout': '0'},
+	{'timeout': '0s'},
 	'key',
 	'stringNewHolders',
 	'stringPrevHolders',
@@ -56,8 +56,6 @@ colors = [
 	'red',
 	'green',
 ]
-
-cmd = 'grep --no-filename "{0}" *debug*.log'.format('\\|'.join(descriptions + fails + successes))
 
 def run_command(command):
     process = subprocess.Popen(['/bin/bash', '-c', command],
@@ -98,7 +96,6 @@ def print_lock(lock_name):
 	max_len_description = max(map(lambda record: len(record['description']), locks[lock_name]['records']))
 	max_len_holders = max(map(lambda record: len(str(record['holders'])), locks[lock_name]['records']))
 
-	prev_record_time = ''
 	for record in locks[lock_name]['records']:
 
 		when = record['when'] if full_time else record['when'][11:-3]
@@ -127,16 +124,67 @@ def print_lock(lock_name):
 		elif record['description'] in successes:
 			description = colorize(description, 'green')
 
-		# if prev_record_time == '':
-		# 	prev_record_time = record['when']
-		# else:
-			
-
 		print '{0}  {1}  {2}  {3}  {4}'.format(when, holder_id, description, holders, attributes)
 
+def save_record(json):
+	record = {}
+	lock_name = json.get('more').get('lockName')
+
+	if lock_name not in locks:
+		locks[lock_name] = {
+			'max_holders': None,
+			'records': [],
+			'holders': set(),
+		}
+
+	# holder id
+	holder_id = json.get('more').get('holderId', '')
+	record['holder_id'] = holder_id
+	locks[lock_name]['holders'].add(holder_id)
+
+	# description
+	description = json.get('what')
+	if description == 'Succeeded to set holders. Start function':
+		description = 'Lock acquired'
+	elif description == 'Lock is busy, starting watcher':
+		description = 'Lock is busy, waiting for update'
+	elif description == 'Got an acquire request' and json.get('more', {}).get('openWatch') == 'false':
+		description = 'Got an try_acquire request'
+	record['description'] = description
+
+	# timestamp
+	record['when'] = json.get('when')
+
+	# max_holders
+	attributes = json.get('more')
+	if locks[lock_name]['max_holders'] == None:
+		locks[lock_name]['max_holders'] = attributes.get('actual value', attributes.get('maxHolders'))
+
+	# holders
+	holders = ''
+	if 'holders' in attributes and 'newHolders' in attributes:
+		holders = attributes['newHolders']
+	elif 'holders' in attributes:
+		holders = attributes['holders']
+	record['holders'] = holders
+
+	# more attributes
+	for attribute in ignored_more_attributes:
+		if type(attribute) == dict:
+			if attribute.keys()[0] in attributes and attributes[attribute.keys()[0]] == attribute[attribute.keys()[0]]:
+				del attributes[attribute.keys()[0]]
+		elif attribute in attributes:
+			del attributes[attribute]
+	record['more'] = attributes
+
+	return lock_name, record
+
+cmd = 'grep --no-filename "{0}" *debug*.log'.format('\\|'.join(descriptions + fails + successes))
 out, err, code = run_command(cmd)
-if code != 0:
-	print out
+if code == 1:
+	print 'No cluster lock found in the logs'
+elif code == 2:
+	print 'Not found log files'
 else:
 	lines = out.split('\n')
 	locks = {}
@@ -145,61 +193,7 @@ else:
 		if line != '':
 			json = simplejson.loads(line)
 			if json.get('more') != {}:
-				
-				record = {}
-				lock_name = json.get('more').get('lockName')
-
-				if lock_name not in locks:
-					locks[lock_name] = {
-						'max_holders': None,
-						'records': [],
-						'holders': set(),
-					}
-
-				# holder id
-				holder_id = json.get('more').get('holderId', '')
-				record['holder_id'] = holder_id
-				locks[lock_name]['holders'].add(holder_id)
-
-				# description
-				description = json.get('what')
-				if description == 'Succeeded to set holders. Start function':
-					description = 'Lock acquired'
-					# if len(json.get('more')['holders']) > 2:
-					# 	json.get('more')['holders'] = '{0} {1}]'.format(json.get('more')['holders'][:-1], holder_id)
-					# else:
-					# 	json.get('more')['holders'] = '[{0}]'.format(holder_id)
-				elif description == 'Lock is busy, starting watcher':
-					description = 'Lock is busy, waiting for update'
-				elif description == 'Got an acquire request' and json.get('more', {}).get('openWatch') == 'false':
-					description = 'Got an try_acquire request'
-				record['description'] = description
-
-				# timestamp
-				record['when'] = json.get('when')
-
-				# max_holders
-				attributes = json.get('more')
-				if locks[lock_name]['max_holders'] == None:
-					locks[lock_name]['max_holders'] = attributes.get('actual value', attributes.get('maxHolders'))
-
-				# holders
-				holders = ''
-				if 'holders' in attributes and 'newHolders' in attributes:
-					holders = attributes['newHolders']
-				elif 'holders' in attributes:
-					holders = attributes['holders']
-				record['holders'] = holders
-
-				# more attributes
-				for attribute in ignored_more_attributes:
-					if type(attribute) == dict:
-						if attribute.keys()[0] in attributes and attributes[attribute.keys()[0]] == attribute[attribute.keys()[0]]:
-							del attributes[attribute.keys()[0]]
-					elif attribute in attributes:
-						del attributes[attribute]
-				record['more'] = attributes
-
+				lock_name, record = save_record(json)
 				locks[lock_name]['records'].append(record)
 
 	for lock_name in locks:
