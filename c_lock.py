@@ -191,7 +191,9 @@ def save_record(json):
 
 	return lock_name, record
 
-cmd = 'grep --no-filename "{0}" *debug*.log'.format('\\|'.join(descriptions + fails + successes))
+all_descriptions = ['"what":"{0}"'.format(description) for description in (descriptions + fails + successes)]
+cmd = 'grep --no-filename \'{0}\' *debug*.log'.format('\\|'.join(all_descriptions))
+print cmd
 out, err, code = run_command(cmd)
 if code == 1:
 	print 'No cluster lock found in the logs'
