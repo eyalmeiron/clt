@@ -2,6 +2,7 @@ import subprocess
 import simplejson
 import colorama
 import sys
+from datetime import datetime
 
 full_time = True
 
@@ -96,7 +97,8 @@ def print_lock(lock_name):
 	max_len_description = max(map(lambda record: len(record['description']), locks[lock_name]['records']))
 	max_len_holders = max(map(lambda record: len(str(record['holders'])), locks[lock_name]['records']))
 
-	for record in locks[lock_name]['records']:
+	prev_record_time = None
+	for record in sorted(locks[lock_name]['records'], key=lambda record_in_array: record_in_array['when']):
 
 		when = record['when'] if full_time else record['when'][11:-3]
 		holder_id = colorize(record['holder_id'], holders_colors[record['holder_id']])
@@ -124,7 +126,17 @@ def print_lock(lock_name):
 		elif record['description'] in successes:
 			description = colorize(description, 'green')
 
+		prev_record_time = print_time_diff(prev_record_time, record['when'])
+
 		print '{0}  {1}  {2}  {3}  {4}'.format(when, holder_id, description, holders, attributes)
+
+def print_time_diff(prev_record_time, record_when):
+	current_record_time = datetime.strptime(record_when, '%Y-%m-%dT%H:%M:%S.%f')
+	if prev_record_time != None:
+		diff_time = current_record_time - prev_record_time
+		if diff_time.total_seconds() > 0.4:
+			print colorize('|----- {0:.2f} Seconds -----|'.format(diff_time.total_seconds()), 'reset')
+	return current_record_time
 
 def save_record(json):
 	record = {}
