@@ -103,6 +103,7 @@ def print_lock(lock_name):
 		when = record['when'] if full_time else record['when'][11:-3]
 		holder_id = colorize(record['holder_id'], holders_colors[record['holder_id']])
 		description = record['description']
+		ctx = colorize('ctx={0}'.format(record['ctx']), 'reset')
 
 		attributes = record['more']
 		holders = colorize_holders(record['holders'])
@@ -128,7 +129,7 @@ def print_lock(lock_name):
 
 		prev_record_time = print_time_diff(prev_record_time, record['when'])
 
-		print '{0}  {1}  {2}  {3}  {4}'.format(when, holder_id, description, holders, attributes)
+		print '{0}  {1}  {2}  {3}  {4}  {5}'.format(when, holder_id, description, holders, attributes, ctx)
 
 def print_time_diff(prev_record_time, record_when):
 	current_record_time = datetime.strptime(record_when, '%Y-%m-%dT%H:%M:%S.%f')
@@ -180,6 +181,9 @@ def save_record(json):
 		holders = attributes['holders']
 	record['holders'] = holders
 
+	# ctx
+	record['ctx'] = json.get('ctx')
+
 	# more attributes
 	for attribute in ignored_more_attributes:
 		if type(attribute) == dict:
@@ -191,14 +195,19 @@ def save_record(json):
 
 	return lock_name, record
 
-all_descriptions = ['"what":"{0}"'.format(description) for description in (descriptions + fails + successes)]
-cmd = 'grep --no-filename \'{0}\' *debug*.log'.format('\\|'.join(all_descriptions))
+# all_descriptions = ['"what":"{0}"'.format(description) for description in (descriptions + fails + successes)]
+all_descriptions = descriptions + fails + successes
+cmd = 'grep --no-filename \'lockName\' *debug*.log | ' \
+	  'grep \'"lang":"go"\' | ' \
+	  'grep \'{0}\''.format('\\|'.join(all_descriptions))
 
 out, err, code = run_command(cmd)
 if code == 1:
 	print 'No cluster lock found in the logs'
 elif code == 2:
 	print 'Not found log files'
+elif code != 0:
+	print out, err, code
 else:
 	lines = out.split('\n')
 	locks = {}
