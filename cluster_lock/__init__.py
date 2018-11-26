@@ -61,7 +61,7 @@ colors = [
 class ClusterLock(object):
 
     def __init__(self, args):
-        pass
+        self._no_ctx = args.no_ctx
 
     @staticmethod
     def _run_command(command):
@@ -150,8 +150,7 @@ class ClusterLock(object):
                 print self._colorize('|----- {0:.2f} Seconds -----|'.format(diff_time.total_seconds()), 'reset')
         return current_record_time
 
-    @staticmethod
-    def _save_record(json, locks):
+    def _save_record(self, json, locks):
         record = {}
         lock_name = json.get('more').get('lockName')
 
@@ -193,9 +192,6 @@ class ClusterLock(object):
             holders = attributes['holders']
         record['holders'] = holders
 
-        # ctx
-        record['ctx'] = json.get('ctx')
-
         # more attributes
         for attribute in ignored_more_attributes:
             if type(attribute) == dict:
@@ -204,7 +200,8 @@ class ClusterLock(object):
                     del attributes[x]
             elif attribute in attributes:
                 del attributes[attribute]
-        attributes['ctx'] = record['ctx']
+        if not self._no_ctx:
+            attributes['ctx'] = json.get('ctx')
         record['more'] = attributes
 
         return lock_name, record
@@ -235,5 +232,5 @@ class ClusterLock(object):
                         locks[lock_name]['records'].append(record)
 
             for lock_name in locks:
-                if len(sys.argv) == 1 or lock_name in sys.argv:
-                    self._print_lock(lock_name, locks)
+                # if len(sys.argv) == 1 or lock_name in sys.argv:
+                self._print_lock(lock_name, locks)
