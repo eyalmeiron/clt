@@ -84,10 +84,12 @@ def print_lock(lock_name):
 		holders_colors[holder] = colors[i]
 		i = (i + 1) % len(colors)
 	max_holders = locks[lock_name]['max_holders']
-	if max_holders == -1:
-		print '\n{0}'.format(colorize(lock_name, 'white'))
-	else:
-		print '\n{0} (max holders {1})'.format(colorize(lock_name, 'white'), locks[lock_name]['max_holders'])
+	max_holders_string = ''
+	if max_holders != -1:
+		max_holders_string = ' (max holders {0})'.format(locks[lock_name]['max_holders'])
+	print '\n{0}{1}{2}'.format(colorize('Lock name: ', 'reset'),
+							   colorize(lock_name, 'white'), 
+							   max_holders_string)
 
 	# if not found holders at all to this lock
 	if locks[lock_name]['holders'] == set([None]):
