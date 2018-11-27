@@ -62,6 +62,7 @@ class ClusterLock(object):
 
     def __init__(self, args):
         self._no_ctx = args.no_ctx
+        self._lock_names = args.lock_names
 
     @staticmethod
     def _run_command(command):
@@ -232,5 +233,5 @@ class ClusterLock(object):
                         locks[lock_name]['records'].append(record)
 
             for lock_name in locks:
-                # if len(sys.argv) == 1 or lock_name in sys.argv:
-                self._print_lock(lock_name, locks)
+                if self._lock_names == [] or lock_name in self._lock_names:
+                    self._print_lock(lock_name, locks)

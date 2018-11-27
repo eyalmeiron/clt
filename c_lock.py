@@ -16,5 +16,9 @@ if __name__ == '__main__':
                         action='store_true',
                         help='don\'t show ctx in the attributes')
 
+    parser.add_argument('lock_names',
+                        nargs='*',
+                        help='show only specific locks')
+
     args = parser.parse_args()
     main(args)
