@@ -63,6 +63,7 @@ class ClusterLock(object):
     def __init__(self, args):
         self._no_ctx = args.no_ctx
         self._lock_names = args.lock_names
+        self._holder_ids = args.holder_ids
 
     @staticmethod
     def _run_command(command):
@@ -85,7 +86,19 @@ class ClusterLock(object):
             return ''
         return ''.join([self._colorize('[', 'RESET'), holders[1:-1], self._colorize(']', 'RESET')])
 
+    @staticmethod
+    def array_include_array(arr1, arr2):
+        for item in arr1:
+            if item in arr2:
+                return True
+        return False
+
     def _print_lock(self, lock_name, locks):
+
+        # if holder ids to display wae provided and not in this lock, don't print this lock
+        if self._holder_ids is not None and not self.array_include_array(self._holder_ids, locks[lock_name]['holders']):
+            return
+
         i = 0
         holders_colors = {}
         for holder in locks[lock_name]['holders']:
@@ -109,6 +122,9 @@ class ClusterLock(object):
 
         prev_record_time = None
         for record in sorted(locks[lock_name]['records'], key=lambda record_in_array: record_in_array['when']):
+
+            if self._holder_ids is not None and record['holder_id'] not in self._holder_ids:
+                continue
 
             when = record['when'] if full_time else record['when'][11:-3]
             holder_id = self._colorize(record['holder_id'], holders_colors[record['holder_id']])
