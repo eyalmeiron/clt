@@ -12,6 +12,8 @@ class Colors(object):
         'red',
         'green',
     ]
+    fatal = 'red'
+    info = 'green'
 
     # get the next color by round robin
     @staticmethod
