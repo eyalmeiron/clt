@@ -4,30 +4,9 @@ import colorama
 import sys
 from datetime import datetime
 
+from descriptions import Descriptions
+
 full_time = True
-
-descriptions = [
-    'Lock is busy, starting watcher',
-    'Got an acquire',
-    'Got release request',
-    'Lock is busy, starting watcher',
-    'Lock is busy, but not waiting as no watcher requested',
-]
-
-successes = [
-    'Lock acquired',
-    'Succeeded to set holders. Start function',
-    'Lock released successfully',
-]
-
-fails = [
-    'The timeout of the watcher expired',
-    'New max holders differ from the current max holders value',
-    'This lock is already acquired by this holder',
-    'Attempt to increase remaining holders over the allowed limit',
-    'Failed to remove holder from holders list',
-    'Got release for unknown lock',
-]
 
 # attribute to not display. when dict then ignore only with this value
 ignored_more_attributes = [
@@ -37,12 +16,12 @@ ignored_more_attributes = [
     'remainingHolders',
     'holderId',
     'maxHolders',
-    {'timeout': '0s'},
+    {'timeout': ['0s', '0']},
     'key',
     'stringNewHolders',
     'stringPrevHolders',
     'openWatch',
-    {'allowMultipleAcquire': 'true'},
+    {'allowMultipleAcquire': ['true']},
 ]
 
 colors = [
@@ -150,9 +129,9 @@ class ClusterLock(object):
                         max_len_holders - (len(str(record['holders'])) if record['holders'] is not '' else 0)))
 
             # colorize description
-            if record['description'] in fails:
+            if record['description'] in Descriptions.fails:
                 description = self._colorize(description, 'red')
-            elif record['description'] in successes:
+            elif record['description'] in Descriptions.successes:
                 description = self._colorize(description, 'green')
 
             prev_record_time = self._print_time_diff(prev_record_time, record['when'])
@@ -210,13 +189,16 @@ class ClusterLock(object):
         record['holders'] = holders
 
         # more attributes
-        for attribute in ignored_more_attributes:
-            if type(attribute) == dict:
-                x = attribute.keys()[0]
-                if x in attributes and attributes[x] == attribute[x]:
-                    del attributes[x]
-            elif attribute in attributes:
-                del attributes[attribute]
+        for ignored_attribute in ignored_more_attributes:
+            if type(ignored_attribute) == dict:
+                key = ignored_attribute.keys()[0]
+                for ignore_value in ignored_attribute[key]:
+                    if key in attributes and ignore_value == attributes[key]:
+                        del attributes[key]
+                        break
+
+            elif ignored_attribute in attributes:
+                del attributes[ignored_attribute]
         if not self._no_ctx:
             attributes['ctx'] = json.get('ctx')
         record['more'] = attributes
@@ -224,8 +206,7 @@ class ClusterLock(object):
         return lock_name, record
 
     def trace(self):
-        # all_descriptions = ['"what":"{0}"'.format(description) for description in (descriptions + fails + successes)]
-        all_descriptions = descriptions + fails + successes
+        all_descriptions = Descriptions.info + Descriptions.fails + Descriptions.successes
         cmd = 'grep --no-filename \'lockName\' *debug*.log | ' \
               'grep \'"lang":"go"\' | ' \
               'grep \'{0}\''.format('\\|'.join(all_descriptions))

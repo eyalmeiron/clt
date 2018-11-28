@@ -26,5 +26,4 @@ if __name__ == '__main__':
                         help='show only specific locks')
 
     args = parser.parse_args()
-    print args
     main(args)
