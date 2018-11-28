@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 
 from descriptions import Descriptions
+from colors import Colors
 
 full_time = True
 
@@ -22,18 +23,6 @@ ignored_more_attributes = [
     'stringPrevHolders',
     'openWatch',
     {'allowMultipleAcquire': ['true']},
-]
-
-colors = [
-    'yellow',
-    'black',
-    'cyan',
-    'magenta',
-    'white',
-    'reset',
-    'blue',
-    'red',
-    'green',
 ]
 
 
@@ -78,11 +67,8 @@ class ClusterLock(object):
         if self._holder_ids is not None and not self.array_include_array(self._holder_ids, locks[lock_name]['holders']):
             return
 
-        i = 0
-        holders_colors = {}
-        for holder in locks[lock_name]['holders']:
-            holders_colors[holder] = colors[i]
-            i = (i + 1) % len(colors)
+        holders_colors = Colors.get_colors(locks[lock_name]['holders'])
+
         max_holders = locks[lock_name]['max_holders']
         max_holders_string = ''
         if max_holders != -1:
