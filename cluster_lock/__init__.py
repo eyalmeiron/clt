@@ -28,7 +28,7 @@ ignored_more_attributes = [
 class ClusterLock(object):
 
     def __init__(self, args):
-        self._no_ctx = args.no_ctx
+        self._ctx = args.ctx
         self._lock_names = args.lock_names
         self._holder_ids = args.holder_ids
 
@@ -122,7 +122,7 @@ class ClusterLock(object):
 
             elif ignored_attribute in attributes:
                 del attributes[ignored_attribute]
-        if not self._no_ctx:
+        if self._ctx:
             attributes['ctx'] = json.get('ctx')
         record['more'] = attributes
 
@@ -195,7 +195,13 @@ class ClusterLock(object):
 
             prev_record_time = self._print_time_diff(prev_record_time, record['when'])
 
-            print '{0}  {1}  {2}  {3}  {4}'.format(when, holder_id, description, holders, attributes)
+            print '{when}  {holder_id}  {description}  {holders}  {attributes}'.format(
+                when=when,
+                holder_id=holder_id,
+                description=description,
+                holders=holders,
+                attributes=attributes
+            )
 
     @staticmethod
     def array_include_array(arr1, arr2):

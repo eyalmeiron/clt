@@ -11,10 +11,9 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('tracer')
 
-    parser.add_argument('-nc',
-                        '--no-ctx',
+    parser.add_argument('-ctx',
                         action='store_true',
-                        help='don\'t show ctx in the attributes')
+                        help='show ctx in the attributes')
 
     parser.add_argument('-hi',
                         '--holder-ids',
