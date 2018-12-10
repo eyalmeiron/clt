@@ -6,6 +6,7 @@ class Descriptions(object):
         'Got release request',
         'Lock is busy, starting watcher',
         'Lock is busy, but not waiting as no watcher requested',
+        'Got peek request',
     ]
 
     successes = [
