@@ -31,6 +31,7 @@ class ClusterLock(object):
         self._ctx = args.ctx
         self._lock_names = args.lock_names
         self._holder_ids = args.holder_ids
+        self._no_peek = args.no_peek
 
         self._locks = {}
 
@@ -39,7 +40,16 @@ class ClusterLock(object):
         self._print_locks()
 
     def _load_records(self):
-        all_descriptions = Descriptions.info + Descriptions.fails + Descriptions.successes
+        info = Descriptions.info
+        fails = Descriptions.fails
+        successes = Descriptions.successes
+
+        if self._no_peek:
+            info = filter(lambda description: 'peek' not in description, info)
+            fails = filter(lambda description: 'peek' not in description, fails)
+            successes = filter(lambda description: 'peek' not in description, successes)
+
+        all_descriptions = info + fails + successes
         cmd = 'grep --no-filename \'lockName\' *debug*.log | ' \
               'grep \'"lang":"go"\' | ' \
               'grep \'{0}\''.format('\\|'.join(all_descriptions))

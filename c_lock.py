@@ -15,6 +15,11 @@ if __name__ == '__main__':
                         action='store_true',
                         help='show ctx in the attributes')
 
+    parser.add_argument('-np',
+                        '--no-peek',
+                        action='store_true',
+                        help='don\'t show peek requests')
+
     parser.add_argument('-hi',
                         '--holder-ids',
                         nargs='+',

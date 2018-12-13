@@ -13,6 +13,7 @@ class Descriptions(object):
         'Lock acquired',
         'Succeeded to set holders. Start function',
         'Lock released successfully',
+        'Successfully peek lock',
     ]
 
     fails = [
@@ -22,4 +23,5 @@ class Descriptions(object):
         'Attempt to increase remaining holders over the allowed limit',
         'Failed to remove holder from holders list',
         'Got release for unknown lock',
+        'Failed peek lock',
     ]
